@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CloudMatch - 彩色记忆翻牌游戏</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        :root {
+            --primary: #3498db;
+            --secondary: #2c3e50;
+            --accent: #e74c3c;
+            --light: #ecf0f1;
+            --dark: #2c3e50;
+            --success: #2ecc71;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --card-bg: #ffffff;
+            --card-back: #3498db;
+            --cloud: #1abc9c;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50, #1a2a6c);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: var(--light);
+            overflow-x: hidden;
+        }
+        
+        .cloud-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.1;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320"><path fill="%231abc9c" fill-opacity="0.4" d="M0,224L48,213.3C96,203,192,181,288,160C384,139,480,117,576,138.7C672,160,768,224,864,229.3C960,235,1056,181,1152,160C1248,139,1344,149,1392,154.7L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path></svg>');
+            background-size: cover;
+            background-position: center;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cloud-header {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(26, 188, 156, 0.2);
+            border-radius: 50%;
+            z-index: -1;
+        }
+        
+        .cloud-header:nth-child(2) {
+            top: 20px;
+            left: -80px;
+            width: 150px;
+            height: 150px;
+        }
+        
+        h1 {
+            font-size: 2.8rem;
+            margin-bottom: 10px;
+            background: linear-gradient(to right, #1abc9c, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 15px;
+        }
+        
+        .cloud-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--cloud), #16a085);
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-left: 10px;
+            font-size: 0.8rem;
+            animation: pulse 2s infinite;
+        }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .game-container {
+            flex: 1;
+            min-width: 300px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        
+        .cloud-corner {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(26, 188, 156, 0.3);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .cloud-corner i {
+            color: white;
+            font-size: 1.5rem;
+        }
+        
+        .stats-panel {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+        
+        .stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: var(--cloud);
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin: 0 auto;
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .card {
+            aspect-ratio: 1;
+            border-radius: 10px;
+            perspective: 1000px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(26, 188, 156, 0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .card:hover::before {
+            opacity: 1;
+        }
+        
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .card-front {
+            transform: rotateY(180deg);
+            font-size: 2.5rem;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 10px;
+            text-align: center;
+        }
+        
+        .card-front i {
+            font-size: 2.2rem;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        
+        .card-front .card-label {
+            font-size: 0.8rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 5px;
+        }
+        
+        .card-back {
+            background: linear-gradient(135deg, var(--card-back), var(--primary));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .card-back i {
+            font-size: 2rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .matched .card-back {
+            background: linear-gradient(135deg, var(--success), #27ae60);
+        }
+        
+        .cloud-sync {
+            background: linear-gradient(135deg, var(--cloud), #16a085);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .cloud-sync:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+        
+        button:active {
+            transform: translateY(1px);
+        }
+        
+        .btn-new-game {
+            background: linear-gradient(135deg, var(--success), #27ae60);
+        }
+        
+        .btn-pause {
+            background: linear-gradient(135deg, var(--warning), #e67e22);
+        }
+        
+        .btn-hint {
+            background: linear-gradient(135deg, var(--primary), #2980b9);
+        }
+        
+        .btn-cloud {
+            background: linear-gradient(135deg, var(--cloud), #16a085);
+        }
+        
+        .sidebar {
+            flex: 0 0 300px;
+            background: rgba(0, 0, 0, 0.25);
+            border-radius: 15px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .panel {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 15px;
+            padding: 20px;
+        }
+        
+        .panel-title {
+            font-size: 1.4rem;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--cloud);
+            color: var(--cloud);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .panel-title i {
+            font-size: 1.2em;
+        }
+        
+        .settings-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+        
+        select, input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        
+        input:checked + .slider {
+            background: linear-gradient(135deg, var(--cloud), #16a085);
+        }
+        
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+        
+        .theme-selector {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+        }
+        
+        .theme-option {
+            aspect-ratio: 1;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.5rem;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .theme-option:hover, .theme-option.active {
+            transform: scale(1.05);
+            border-color: var(--cloud);
+        }
+        
+        .theme-1 { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .theme-2 { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .theme-3 { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .theme-4 { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .theme-5 { background: linear-gradient(135deg, #f1c40f, #f39c12); }
+        .theme-6 { background: linear-gradient(135deg, #1abc9c, #16a085); }
+        
+        .leaderboard {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 15px;
+        }
+        
+        .leaderboard-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .leaderboard-item:last-child {
+            border-bottom: none;
+        }
+        
+        .leaderboard-rank {
+            width: 25px;
+            height: 25px;
+            background: var(--cloud);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+        
+        .leaderboard-user {
+            display: flex;
+            align-items: center;
+        }
+        
+        .user-avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 10px;
+            font-size: 0.9rem;
+        }
+        
+        .victory-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s;
+        }
+        
+        .victory-screen.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .victory-content {
+            background: linear-gradient(135deg, #1a2a6c, #2c3e50);
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            transform: scale(0.8);
+            transition: transform 0.5s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .victory-screen.show .victory-content {
+            transform: scale(1);
+        }
+        
+        .victory-clouds {
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: rgba(26, 188, 156, 0.2);
+            border-radius: 50%;
+            z-index: -1;
+        }
+        
+        .victory-clouds:nth-child(2) {
+            top: auto;
+            bottom: -80px;
+            left: -50px;
+            width: 150px;
+            height: 150px;
+        }
+        
+        .victory-title {
+            font-size: 3rem;
+            margin-bottom: 20px;
+            color: var(--cloud);
+        }
+        
+        .victory-stats {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .victory-stats div {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            border-radius: 10px;
+        }
+        
+        .victory-score {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin: 20px 0;
+            color: var(--cloud);
+        }
+        
+        .cloud-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        @media (max-width: 900px) {
+            .main-content {
+                flex-direction: column;
+            }
+            
+            .sidebar {
+                flex: 1;
+                width: 100%;
+            }
+            
+            .game-board {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+        
+        @media (max-width: 500px) {
+            .game-board {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .stats-panel {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            h1 {
+                font-size: 2.2rem;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .victory-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Animations */
+        @keyframes flip {
+            0% { transform: rotateY(0); }
+            50% { transform: rotateY(90deg); }
+            100% { transform: rotateY(180deg); }
+        }
+        
+        .flipped {
+            animation: flip 0.6s ease forwards;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .matched {
+            animation: pulse 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .mismatch {
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes float {
+            0% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0); }
+        }
+        
+        .floating {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        .difficulty-badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+        
+        .easy { background: var(--success); }
+        .medium { background: var(--warning); }
+        .hard { background: var(--danger); }
+        
+        .login-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            justify-content: center;
+        }
+        
+        .user-avatar-lg {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cloud), #16a085);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+        
+        .user-name {
+            font-weight: bold;
+            font-size: 1.2rem;
+        }
+        
+        .cloud-status {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(26, 188, 156, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        
+        /* 彩色卡片样式 */
+        .card-color-1 { background: linear-gradient(135deg, #3498db, #2980b9); }
+        .card-color-2 { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        .card-color-3 { background: linear-gradient(135deg, #2ecc71, #27ae60); }
+        .card-color-4 { background: linear-gradient(135deg, #9b59b6, #8e44ad); }
+        .card-color-5 { background: linear-gradient(135deg, #f1c40f, #f39c12); }
+        .card-color-6 { background: linear-gradient(135deg, #1abc9c, #16a085); }
+        .card-color-7 { background: linear-gradient(135deg, #e67e22, #d35400); }
+        .card-color-8 { background: linear-gradient(135deg, #34495e, #2c3e50); }
+        .card-color-9 { background: linear-gradient(135deg, #d35400, #e74c3c); }
+        .card-color-10 { background: linear-gradient(135deg, #27ae60, #16a085); }
+        .card-color-11 { background: linear-gradient(135deg, #8e44ad, #9b59b6); }
+        .card-color-12 { background: linear-gradient(135deg, #2980b9, #3498db); }
+    </style>
+</head>
+<body>
+    <div class="cloud-bg"></div>
+    
+    <div class="container">
+        <header>
+            <div class="cloud-header"></div>
+            <div class="cloud-header"></div>
+            <h1>CloudMatch <span class="cloud-badge">彩色云端版</span></h1>
+            <p class="subtitle">基于云端的记忆翻牌游戏 - 炫彩卡片设计，挑战你的记忆力！</p>
+        </header>
+        
+        <div class="main-content">
+            <div class="game-container">
+                <div class="cloud-corner floating">
+                    <i class="fas fa-cloud"></i>
+                </div>
+                
+                <div class="stats-panel">
+                    <div class="stat">
+                        <div>时间</div>
+                        <div class="stat-value" id="timer">00:00</div>
+                    </div>
+                    <div class="stat">
+                        <div>翻牌次数</div>
+                        <div class="stat-value" id="moves">0</div>
+                    </div>
+                    <div class="stat">
+                        <div>剩余卡片</div>
+                        <div class="stat-value" id="remaining">16</div>
+                    </div>
+                    <div class="stat">
+                        <div>分数</div>
+                        <div class="stat-value" id="score">0</div>
+                    </div>
+                </div>
+                
+                <div class="game-board" id="game-board">
+                    <!-- 卡片由JavaScript生成 -->
+                </div>
+                
+                <div class="cloud-sync" id="cloud-sync">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <span>云端同步: 已连接</span>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn-new-game" id="new-game">
+                        <i class="fas fa-plus-circle"></i> 新游戏
+                    </button>
+                    <button class="btn-pause" id="pause">
+                        <i class="fas fa-pause"></i> 暂停
+                    </button>
+                    <button class="btn-hint" id="hint">
+                        <i class="fas fa-lightbulb"></i> 提示
+                    </button>
+                    <button class="btn-cloud" id="cloud-save">
+                        <i class="fas fa-save"></i> 保存进度
+                    </button>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="login-panel">
+                    <div class="user-info">
+                        <div class="user-avatar-lg">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div>
+                            <div class="user-name">云端玩家</div>
+                            <div>等级: 记忆大师</div>
+                        </div>
+                    </div>
+                    <div class="cloud-status">
+                        <i class="fas fa-cloud"></i>
+                        <span>CloudBase 已连接</span>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h2 class="panel-title"><i class="fas fa-cog"></i> 游戏设置</h2>
+                    
+                    <div class="settings-group">
+                        <label for="difficulty">难度级别</label>
+                        <select id="difficulty">
+                            <option value="easy">简单 (4×4)</option>
+                            <option value="medium">中等 (5×5)</option>
+                            <option value="hard">困难 (6×6)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label>主题选择</label>
+                        <div class="theme-selector">
+                            <div class="theme-option theme-1 active" data-theme="theme1"><i class="fas fa-cloud"></i></div>
+                            <div class="theme-option theme-2" data-theme="theme2"><i class="fas fa-apple-alt"></i></div>
+                            <div class="theme-option theme-3" data-theme="theme3"><i class="fas fa-star"></i></div>
+                            <div class="theme-option theme-4" data-theme="theme4"><i class="fas fa-heart"></i></div>
+                            <div class="theme-option theme-5" data-theme="theme5"><i class="fas fa-music"></i></div>
+                            <div class="theme-option theme-6" data-theme="theme6"><i class="fas fa-gamepad"></i></div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <label for="flip-speed">翻牌速度</label>
+                        <input type="range" id="flip-speed" min="1" max="10" value="5">
+                    </div>
+                    
+                    <div class="settings-group">
+                        <div class="checkbox-group">
+                            <label for="sound">音效</label>
+                            <label class="switch">
+                                <input type="checkbox" id="sound" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-group">
+                        <div class="checkbox-group">
+                            <label for="music">背景音乐</label>
+                            <label class="switch">
+                                <input type="checkbox" id="music" checked>
+                                <span class="slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h2 class="panel-title"><i class="fas fa-trophy"></i> 云端排行榜</h2>
+                    <div class="leaderboard">
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-user">
+                                <div class="leaderboard-rank">1</div>
+                                <div class="user-avatar">C</div>
+                                <div>ColorMaster</div>
+                            </div>
+                            <div>9820分</div>
+                        </div>
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-user">
+                                <div class="leaderboard-rank">2</div>
+                                <div class="user-avatar">M</div>
+                                <div>MemoryPro</div>
+                            </div>
+                            <div>8650分</div>
+                        </div>
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-user">
+                                <div class="leaderboard-rank">3</div>
+                                <div class="user-avatar">S</div>
+                                <div>RainbowPlayer</div>
+                            </div>
+                            <div>7420分</div>
+                        </div>
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-user">
+                                <div class="leaderboard-rank">4</div>
+                                <div class="user-avatar">Y</div>
+                                <div>YourGame</div>
+                            </div>
+                            <div>6580分</div>
+                        </div>
+                        <div class="leaderboard-item">
+                            <div class="leaderboard-user">
+                                <div class="leaderboard-rank">5</div>
+                                <div class="user-avatar">P</div>
+                                <div>PalettePro</div>
+                            </div>
+                            <div>5890分</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="victory-screen" id="victory-screen">
+        <div class="victory-content">
+            <div class="victory-clouds"></div>
+            <div class="victory-clouds"></div>
+            
+            <h2 class="victory-title">恭喜获胜！</h2>
+            <div class="victory-stats">
+                <div>用时: <span id="victory-time">01:45</span></div>
+                <div>翻牌次数: <span id="victory-moves">28</span></div>
+                <div>难度: <span id="victory-difficulty">简单</span></div>
+                <div>匹配对: <span id="victory-pairs">8</span></div>
+            </div>
+            <div class="victory-score">得分: <span id="victory-score">760</span></div>
+            
+            <div class="cloud-actions">
+                <button class="btn-cloud" id="victory-save">
+                    <i class="fas fa-cloud-upload-alt"></i> 保存到云端
+                </button>
+                <button class="btn-new-game" id="victory-new-game">
+                    <i class="fas fa-redo"></i> 再玩一次
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // 游戏元素
+            const gameBoard = document.getElementById('game-board');
+            const timerElement = document.getElementById('timer');
+            const movesElement = document.getElementById('moves');
+            const remainingElement = document.getElementById('remaining');
+            const scoreElement = document.getElementById('score');
+            const victoryScreen = document.getElementById('victory-screen');
+            const cloudSync = document.getElementById('cloud-sync');
+            
+            // 按钮
+            const newGameBtn = document.getElementById('new-game');
+            const pauseBtn = document.getElementById('pause');
+            const hintBtn = document.getElementById('hint');
+            const cloudSaveBtn = document.getElementById('cloud-save');
+            const victoryNewGameBtn = document.getElementById('victory-new-game');
+            const victorySaveBtn = document.getElementById('victory-save');
+            
+            // 设置
+            const difficultySelect = document.getElementById('difficulty');
+            const themeOptions = document.querySelectorAll('.theme-option');
+            const flipSpeed = document.getElementById('flip-speed');
+            const soundToggle = document.getElementById('sound');
+            const musicToggle = document.getElementById('music');
+            
+            // 游戏状态
+            let cards = [];
+            let flippedCards = [];
+            let matchedPairs = 0;
+            let moves = 0;
+            let timer = 0;
+            let timerInterval;
+            let isPaused = false;
+            let gameActive = false;
+            let totalPairs = 0;
+            let flipDuration = 500;
+            
+            // 主题 - 使用Font Awesome图标
+            const themes = {
+                theme1: [
+                    {icon: 'fa-cloud', label: '云朵', colorClass: 'card-color-1'},
+                    {icon: 'fa-cloud-sun', label: '太阳云', colorClass: 'card-color-2'},
+                    {icon: 'fa-cloud-moon', label: '月亮云', colorClass: 'card-color-3'},
+                    {icon: 'fa-cloud-rain', label: '雨云', colorClass: 'card-color-4'},
+                    {icon: 'fa-cloud-showers-heavy', label: '暴雨', colorClass: 'card-color-5'},
+                    {icon: 'fa-cloud-sun-rain', label: '太阳雨', colorClass: 'card-color-6'},
+                    {icon: 'fa-bolt', label: '闪电', colorClass: 'card-color-7'},
+                    {icon: 'fa-smog', label: '雾霾', colorClass: 'card-color-8'}
+                ],
+                theme2: [
+                    {icon: 'fa-apple-alt', label: '苹果', colorClass: 'card-color-1'},
+                    {icon: 'fa-lemon', label: '柠檬', colorClass: 'card-color-2'},
+                    {icon: 'fa-pepper-hot', label: '辣椒', colorClass: 'card-color-3'},
+                    {icon: 'fa-carrot', label: '胡萝卜', colorClass: 'card-color-4'},
+                    {icon: 'fa-seedling', label: '幼苗', colorClass: 'card-color-5'},
+                    {icon: 'fa-cookie', label: '饼干', colorClass: 'card-color-6'},
+                    {icon: 'fa-ice-cream', label: '冰淇淋', colorClass: 'card-color-7'},
+                    {icon: 'fa-cheese', label: '奶酪', colorClass: 'card-color-8'}
+                ],
+                theme3: [
+                    {icon: 'fa-star', label: '星星', colorClass: 'card-color-1'},
+                    {icon: 'fa-moon', label: '月亮', colorClass: 'card-color-2'},
+                    {icon: 'fa-sun', label: '太阳', colorClass: 'card-color-3'},
+                    {icon: 'fa-cloud', label: '云朵', colorClass: 'card-color-4'},
+                    {icon: 'fa-bolt', label: '闪电', colorClass: 'card-color-5'},
+                    {icon: 'fa-snowflake', label: '雪花', colorClass: 'card-color-6'},
+                    {icon: 'fa-umbrella', label: '雨伞', colorClass: 'card-color-7'},
+                    {icon: 'fa-fire', label: '火焰', colorClass: 'card-color-8'}
+                ],
+                theme4: [
+                    {icon: 'fa-heart', label: '爱心', colorClass: 'card-color-1'},
+                    {icon: 'fa-gem', label: '宝石', colorClass: 'card-color-2'},
+                    {icon: 'fa-crown', label: '皇冠', colorClass: 'card-color-3'},
+                    {icon: 'fa-key', label: '钥匙', colorClass: 'card-color-4'},
+                    {icon: 'fa-gift', label: '礼物', colorClass: 'card-color-5'},
+                    {icon: 'fa-flag', label: '旗帜', colorClass: 'card-color-6'},
+                    {icon: 'fa-bell', label: '铃铛', colorClass: 'card-color-7'},
+                    {icon: 'fa-envelope', label: '信封', colorClass: 'card-color-8'}
+                ],
+                theme5: [
+                    {icon: 'fa-music', label: '音乐', colorClass: 'card-color-1'},
+                    {icon: 'fa-guitar', label: '吉他', colorClass: 'card-color-2'},
+                    {icon: 'fa-drum', label: '鼓', colorClass: 'card-color-3'},
+                    {icon: 'fa-microphone', label: '麦克风', colorClass: 'card-color-4'},
+                    {icon: 'fa-headphones', label: '耳机', colorClass: 'card-color-5'},
+                    {icon: 'fa-record-vinyl', label: '唱片', colorClass: 'card-color-6'},
+                    {icon: 'fa-trumpet', label: '小号', colorClass: 'card-color-7'},
+                    {icon: 'fa-violin', label: '小提琴', colorClass: 'card-color-8'}
+                ],
+                theme6: [
+                    {icon: 'fa-gamepad', label: '游戏手柄', colorClass: 'card-color-1'},
+                    {icon: 'fa-chess', label: '棋子', colorClass: 'card-color-2'},
+                    {icon: 'fa-dice', label: '骰子', colorClass: 'card-color-3'},
+                    {icon: 'fa-puzzle-piece', label: '拼图', colorClass: 'card-color-4'},
+                    {icon: 'fa-ghost', label: '幽灵', colorClass: 'card-color-5'},
+                    {icon: 'fa-dragon', label: '龙', colorClass: 'card-color-6'},
+                    {icon: 'fa-robot', label: '机器人', colorClass: 'card-color-7'},
+                    {icon: 'fa-rocket', label: '火箭', colorClass: 'card-color-8'}
+                ]
+            };
+            
+            let currentTheme = 'theme1';
+            
+            // 初始化游戏
+            function initGame() {
+                // 重置游戏状态
+                clearInterval(timerInterval);
+                gameBoard.innerHTML = '';
+                cards = [];
+                flippedCards = [];
+                matchedPairs = 0;
+                moves = 0;
+                timer = 0;
+                isPaused = false;
+                gameActive = true;
+                
+                // 更新UI
+                timerElement.textContent = '00:00';
+                movesElement.textContent = '0';
+                scoreElement.textContent = '0';
+                pauseBtn.innerHTML = '<i class="fas fa-pause"></i> 暂停';
+                pauseBtn.style.background = 'linear-gradient(135deg, var(--warning), #e67e22)';
+                
+                // 隐藏胜利画面
+                victoryScreen.classList.remove('show');
+                
+                // 设置难度
+                const difficulty = difficultySelect.value;
+                let gridSize;
+                
+                switch(difficulty) {
+                    case 'easy':
+                        gridSize = 4;
+                        totalPairs = 8;
+                        break;
+                    case 'medium':
+                        gridSize = 5;
+                        totalPairs = 12;
+                        break;
+                    case 'hard':
+                        gridSize = 6;
+                        totalPairs = 18;
+                        break;
+                }
+                
+                // 设置翻牌速度
+                flipDuration = 1000 - (flipSpeed.value * 80);
+                
+                // 更新剩余卡片
+                remainingElement.textContent = totalPairs * 2;
+                
+                // 更新网格布局
+                gameBoard.style.gridTemplateColumns = `repeat(${gridSize}, 1fr)`;
+                
+                // 创建卡片对
+                const themeItems = [...themes[currentTheme]].slice(0, totalPairs);
+                const cardValues = [...themeItems, ...themeItems];
+                
+                // 洗牌
+                shuffleArray(cardValues);
+                
+                // 创建卡片元素
+                cardValues.forEach((item, index) => {
+                    const card = document.createElement('div');
+                    card.className = 'card';
+                    card.dataset.value = item.icon;
+                    card.dataset.index = index;
+                    
+                    card.innerHTML = `
+                        <div class="card-inner">
+                            <div class="card-front ${item.colorClass}">
+                                <i class="fas ${item.icon}"></i>
+                                <div class="card-label">${item.label}</div>
+                            </div>
+                            <div class="card-back">
+                                <i class="fas fa-cloud"></i>
+                            </div>
+                        </div>
+                    `;
+                    
+                    card.addEventListener('click', () => flipCard(card));
+                    gameBoard.appendChild(card);
+                    cards.push(card);
+                });
+                
+                // 开始计时
+                startTimer();
+                
+                // 模拟云端连接
+                simulateCloudConnection();
+            }
+            
+            // 模拟云端连接
+            function simulateCloudConnection() {
+                cloudSync.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 连接云端...';
+                setTimeout(() => {
+                    cloudSync.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> 云端同步: 已连接';
+                }, 1500);
+            }
+            
+            // 洗牌算法
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+            
+            // 开始游戏计时
+            function startTimer() {
+                clearInterval(timerInterval);
+                timerInterval = setInterval(() => {
+                    if (!isPaused && gameActive) {
+                        timer++;
+                        const minutes = Math.floor(timer / 60).toString().padStart(2, '0');
+                        const seconds = (timer % 60).toString().padStart(2, '0');
+                        timerElement.textContent = `${minutes}:${seconds}`;
+                        
+                        // 每10秒更新分数
+                        if (timer % 10 === 0) {
+                            updateScore();
+                        }
+                    }
+                }, 1000);
+            }
+            
+            // 翻转卡片
+            function flipCard(card) {
+                if (!gameActive || isPaused) return;
+                if (flippedCards.length >= 2) return;
+                if (card.classList.contains('flipped') || card.classList.contains('matched')) return;
+                
+                // 翻转卡片
+                card.classList.add('flipped');
+                flippedCards.push(card);
+                
+                // 播放音效
+                if (soundToggle.checked) {
+                    playSound('flip');
+                }
+                
+                // 检查是否匹配
+                if (flippedCards.length === 2) {
+                    moves++;
+                    movesElement.textContent = moves;
+                    
+                    const [firstCard, secondCard] = flippedCards;
+                    
+                    if (firstCard.dataset.value === secondCard.dataset.value) {
+                        // 匹配成功
+                        setTimeout(() => {
+                            firstCard.classList.add('matched');
+                            secondCard.classList.add('matched');
+                            flippedCards = [];
+                            matchedPairs++;
+                            
+                            // 更新剩余卡片
+                            remainingElement.textContent = (totalPairs * 2) - (matchedPairs * 2);
+                            
+                            // 更新分数
+                            updateScore();
+                            
+                            // 播放匹配音效
+                            if (soundToggle.checked) {
+                                playSound('match');
+                            }
+                            
+                            // 检查是否获胜
+                            if (matchedPairs === totalPairs) {
+                                endGame();
+                            }
+                        }, flipDuration);
+                    } else {
+                        // 匹配失败
+                        setTimeout(() => {
+                            firstCard.classList.remove('flipped');
+                            secondCard.classList.remove('flipped');
+                            flippedCards = [];
+                            
+                            // 播放不匹配音效
+                            if (soundToggle.checked) {
+                                playSound('mismatch');
+                            }
+                        }, flipDuration + 300);
+                    }
+                }
+            }
+            
+            // 更新玩家分数
+            function updateScore() {
+                // 分数公式: (1000 - (时间 * 2) - (移动次数 * 5)) * 难度系数
+                let difficultyMultiplier = 1;
+                switch(difficultySelect.value) {
+                    case 'medium': difficultyMultiplier = 1.5; break;
+                    case 'hard': difficultyMultiplier = 2; break;
+                }
+                
+                const newScore = Math.max(0, Math.floor((1000 - (timer * 2) - (moves * 5)) * difficultyMultiplier));
+                scoreElement.textContent = newScore;
+                return newScore;
+            }
+            
+            // 结束游戏
+            function endGame() {
+                gameActive = false;
+                clearInterval(timerInterval);
+                
+                const finalScore = updateScore();
+                
+                // 更新胜利画面
+                document.getElementById('victory-time').textContent = timerElement.textContent;
+                document.getElementById('victory-moves').textContent = moves;
+                
+                let difficultyText = '';
+                switch(difficultySelect.value) {
+                    case 'easy': difficultyText = '简单'; break;
+                    case 'medium': difficultyText = '中等'; break;
+                    case 'hard': difficultyText = '困难'; break;
+                }
+                
+                document.getElementById('victory-difficulty').textContent = difficultyText;
+                document.getElementById('victory-pairs').textContent = totalPairs;
+                document.getElementById('victory-score').textContent = finalScore;
+                
+                // 延迟显示胜利画面
+                setTimeout(() => {
+                    victoryScreen.classList.add('show');
+                }, 1000);
+                
+                // 播放胜利音效
+                if (soundToggle.checked) {
+                    playSound('victory');
+                }
+            }
+            
+            // 播放音效
+            function playSound(type) {
+                // 在实际应用中，这里会播放真实音效
+                console.log(`播放 ${type} 音效`);
+            }
+            
+            // 保存到云端
+            function saveToCloud() {
+                cloudSync.innerHTML = '<i class="fas fa-sync-alt fa-spin"></i> 保存中...';
+                setTimeout(() => {
+                    cloudSync.innerHTML = '<i class="fas fa-cloud-upload-alt"></i> 游戏已保存到云端';
+                    
+                    // 显示通知
+                    const notification = document.createElement('div');
+                    notification.innerHTML = '<i class="fas fa-check-circle"></i> 游戏进度已保存到CloudBase';
+                    notification.style.position = 'fixed';
+                    notification.style.bottom = '20px';
+                    notification.style.right = '20px';
+                    notification.style.background = 'linear-gradient(135deg, var(--cloud), #16a085)';
+                    notification.style.color = 'white';
+                    notification.style.padding = '15px 25px';
+                    notification.style.borderRadius = '10px';
+                    notification.style.zIndex = '1000';
+                    notification.style.boxShadow = '0 5px 15px rgba(0,0,0,0.3)';
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        notification.style.opacity = '0';
+                        notification.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            document.body.removeChild(notification);
+                        }, 500);
+                    }, 3000);
+                }, 1500);
+            }
+            
+            // 事件监听器
+            newGameBtn.addEventListener('click', initGame);
+            victoryNewGameBtn.addEventListener('click', initGame);
+            
+            pauseBtn.addEventListener('click', () => {
+                if (!gameActive) return;
+                
+                isPaused = !isPaused;
+                pauseBtn.innerHTML = isPaused ? 
+                    '<i class="fas fa-play"></i> 继续' : 
+                    '<i class="fas fa-pause"></i> 暂停';
+                
+                if (isPaused) {
+                    pauseBtn.style.background = 'linear-gradient(135deg, var(--success), #27ae60)';
+                } else {
+                    pauseBtn.style.background = 'linear-gradient(135deg, var(--warning), #e67e22)';
+                }
+            });
+            
+            hintBtn.addEventListener('click', () => {
+                if (!gameActive || isPaused) return;
+                
+                // 找到未匹配的卡片
+                const unmatchedCards = cards.filter(card => 
+                    !card.classList.contains('matched') && 
+                    !card.classList.contains('flipped')
+                );
+                
+                if (unmatchedCards.length >= 2) {
+                    // 临时显示提示
+                    const [firstCard, secondCard] = unmatchedCards;
+                    
+                    firstCard.classList.add('flipped');
+                    secondCard.classList.add('flipped');
+                    
+                    setTimeout(() => {
+                        firstCard.classList.remove('flipped');
+                        secondCard.classList.remove('flipped');
+                    }, 1000);
+                }
+            });
+            
+            // 云端保存按钮
+            cloudSaveBtn.addEventListener('click', saveToCloud);
+            victorySaveBtn.addEventListener('click', saveToCloud);
+            
+            // 主题选择
+            themeOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    themeOptions.forEach(opt => opt.classList.remove('active'));
+                    option.classList.add('active');
+                    currentTheme = option.dataset.theme;
+                    
+                    // 如果游戏正在进行，使用新主题重新开始
+                    if (gameActive) {
+                        initGame();
+                    }
+                });
+            });
+            
+            // 翻牌速度调整
+            flipSpeed.addEventListener('input', () => {
+                flipDuration = 1000 - (flipSpeed.value * 80);
+            });
+            
+            // 初始化游戏
+            initGame();
+        });
+    </script>
+</body>
+</html>
